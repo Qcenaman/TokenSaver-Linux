@@ -1,0 +1,61 @@
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+const appVersion = "0.1.0"
+
+// toolsVersion: the Windows TokenSaver release whose tools this build matches.
+const toolsVersion = "1.24.0"
+
+func main() {
+	initApp()
+	args := os.Args[1:]
+	if len(args) == 0 {
+		consoleMenu()
+		return
+	}
+	switch args[0] {
+	case "mcp":
+		serveMCP(os.Stdin, os.Stdout)
+	case "run":
+		if len(args) < 2 {
+			fmt.Println(`usage: tokensaver run "<saved job name>"`)
+			os.Exit(2)
+		}
+		os.Exit(consoleRunSaved(args[1]))
+	case "install":
+		consoleInstall()
+	case "uninstall":
+		consoleUninstall()
+	case "helper":
+		os.Exit(serveElevatedHelper())
+	case "install-helper":
+		consoleInstallHelper()
+	case "uninstall-helper":
+		consoleUninstallHelper()
+	case "ai-watch":
+		os.Exit(aiWatchMain())
+	case "serve":
+		serveLink()
+	case "install-link":
+		consoleInstallLink()
+	case "phone":
+		os.Exit(phoneCLI(args[1:]))
+	case "chats":
+		os.Exit(chatsCLI(args[1:]))
+	case "version":
+		fmt.Println("tokensaver", appVersion, "(Linux; tools of TokenSaver "+toolsVersion+")")
+	case "restart-claude":
+		os.Exit(restartClaudeNow())
+	case "terminal":
+		terminal()
+	case "macro":
+		os.Exit(runMacroCLI(args[1:]))
+	default:
+		fmt.Println("unknown command:", args[0])
+		os.Exit(2)
+	}
+}

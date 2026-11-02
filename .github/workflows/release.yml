@@ -1,5 +1,5 @@
 name: release
-# When main.go's appVersion has no tag yet: test, build with -trimpath, tag vX.Y.Z and
+# When the appVersion in main.go has no tag yet: test, build with -trimpath, tag vX.Y.Z and
 # publish a GitHub Release whose notes are the version commit's message body.
 on:
   push:
@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: commit to release (default: main)
+        description: "commit to release (default is main)"
         required: false
       notes:
-        description: release notes (default: the commit message body)
+        description: "release notes (default is the commit message body)"
         required: false
 permissions:
   contents: write

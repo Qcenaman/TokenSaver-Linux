@@ -63,7 +63,11 @@ func consoleMenu() {
 		}
 		fmt.Println()
 		if askYes("Install now? [Y/n] ", true) {
-			consoleInstall()
+			if isWin {
+				consoleInstall()
+			} else {
+				consoleSetup()
+			}
 		}
 		waitEnter("\nPress Enter to close.", 0)
 		return

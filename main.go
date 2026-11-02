@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const appVersion = "0.3.0"
+const appVersion = "0.4.0"
 
 // toolsVersion: the Windows TokenSaver release whose tools this build matches.
 const toolsVersion = "1.24.0"
@@ -46,6 +46,8 @@ func main() {
 		os.Exit(phoneCLI(args[1:]))
 	case "chats":
 		os.Exit(chatsCLI(args[1:]))
+	case "setup":
+		consoleSetup()
 	case "refresh-helper":
 		refreshHelper()
 	case "version":

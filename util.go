@@ -71,6 +71,9 @@ func initApp() {
 	if cfg.AIScript == "" && isWin {
 		cfg.AIScript = defaultAIScript
 	}
+	if cfg.AIScript == "" && !isWin {
+		cfg.AIScript = linuxDefaultAIScript()
+	}
 }
 
 func jobsDir() string  { return filepath.Join(appHome, "jobs") }

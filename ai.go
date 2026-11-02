@@ -461,7 +461,7 @@ func (c *aiClient) loadCtx() {
 var (
 	portRe    = regexp.MustCompile(`(?i)--port[ =]+"?(\d+)`)
 	hostRe    = regexp.MustCompile(`(?i)--host[ =]+"?([^\s"]+)`)
-	setPortRe = regexp.MustCompile(`(?i)set\s+"?port=(\d+)`)
+	setPortRe = regexp.MustCompile(`(?i)(?:set\s+"?|export\s+|^|\n)port=(\d+)`)
 )
 
 func scriptAddr(script string) (string, int) {

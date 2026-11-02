@@ -19,6 +19,7 @@ func installHint(tool string) string {
 		"7z": "7zip", "adb": "adb", "xdotool": "xdotool", "wmctrl": "wmctrl", "xclip": "xclip",
 		"wl-copy": "wl-clipboard", "ydotool": "ydotool", "magick": "imagemagick", "convert": "imagemagick",
 		"cmake": "cmake build-essential", "git": "git", "heif-convert": "libheif-examples",
+		"import": "imagemagick", "xsel": "xsel", "wl-paste": "wl-clipboard", "grim": "grim",
 	}[tool]
 	if pkg == "" {
 		pkg = tool

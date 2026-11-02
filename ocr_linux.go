@@ -67,6 +67,29 @@ func ocrTmpDir() (string, error) {
 	return os.MkdirTemp(d, "ocr-")
 }
 
+// tesseractUpscaled OCRs small pictures (screens, UI) at twice the size, as Windows OCR does,
+// and maps sizes and word boxes back to the original pixels.
+func tesseractUpscaled(ctx context.Context, img string, n int, boxes, upscale bool, dir string) (ocrPage, error) {
+	w, h := imageSize(img)
+	if !upscale || w == 0 || w >= 1600 || h >= 1600 || !hasCmd("convert") {
+		return tesseractPage(ctx, img, n, boxes)
+	}
+	big := filepath.Join(dir, "up.png")
+	if exec.CommandContext(ctx, "convert", img, "-resize", "200%", big).Run() != nil {
+		return tesseractPage(ctx, img, n, boxes)
+	}
+	pg, err := tesseractPage(ctx, big, n, boxes)
+	os.Remove(big)
+	pg.W, pg.H = w, h
+	for i := range pg.Lines {
+		for j := range pg.Lines[i].Words {
+			wd := &pg.Lines[i].Words[j]
+			wd.X, wd.Y, wd.W, wd.H = wd.X/2, wd.Y/2, (wd.W+1)/2, (wd.H+1)/2
+		}
+	}
+	return pg, err
+}
+
 // tesseractPage OCRs one image file into a page (word boxes in image pixels).
 func tesseractPage(ctx context.Context, img string, n int, boxes bool) (ocrPage, error) {
 	pg := ocrPage{N: n}
@@ -285,7 +308,7 @@ func runLinuxOCR(ctx context.Context, r ocrReq, each func(ocrPage)) ([]byte, err
 				os.WriteFile(src, jpg, 0o644)
 			}
 		}
-		pg, err := tesseractPage(ctx, src, 0, r.boxes)
+		pg, err := tesseractUpscaled(ctx, src, 0, r.boxes, r.upscale, dir)
 		if err != nil {
 			return nil, err
 		}

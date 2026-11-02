@@ -482,7 +482,7 @@ func phonePublicSetup(host string) string {
 // firewallAllowLink adds an inbound rule for the link port on every profile (through the admin helper).
 func firewallAllowLink(port int) string {
 	if !isWin {
-		return "firewall: open TCP " + fmt.Sprint(port) + " inbound yourself"
+		return firewallAllowLinux(port)
 	}
 	out, _ := runQuiet(10*time.Second, "netsh", "advfirewall", "firewall", "show", "rule", "name=TokenSaver Link")
 	if strings.Contains(out, "Profiles:") && (strings.Contains(out, "Domain,Private,Public") || strings.Contains(out, "Profiles:                             Any") || regexp.MustCompile(`Profiles:\s+(Any|Domain,Private,Public)`).MatchString(out)) {

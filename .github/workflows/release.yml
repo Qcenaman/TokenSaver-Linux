@@ -1,0 +1,48 @@
+name: release
+# When main.go's appVersion has no tag yet: test, build with -trimpath, tag vX.Y.Z and
+# publish a GitHub Release whose notes are the version commit's message body.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: commit to release (default: main)
+        required: false
+      notes:
+        description: release notes (default: the commit message body)
+        required: false
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+      - id: v
+        run: |
+          v=$(grep -oP 'appVersion = "\K[^"]+' main.go)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.v.outputs.skip != '1'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - if: steps.v.outputs.skip != '1'
+        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr poppler-utils imagemagick
+      - if: steps.v.outputs.skip != '1'
+        run: go vet ./... && go test ./...
+      - if: steps.v.outputs.skip != '1'
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o tokensaver-linux-amd64 .
+      - if: steps.v.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          if [ -n "$NOTES" ]; then printf '%s\n' "$NOTES" > notes.md
+          else git log -1 --format=%b | grep -vE '^(Co-Authored-By|Claude-Session):' > notes.md; fi
+          v=${{ steps.v.outputs.version }}
+          gh release create "v$v" --target "$(git rev-parse HEAD)" --title "TokenSaver for Linux $v" --notes-file notes.md tokensaver-linux-amd64

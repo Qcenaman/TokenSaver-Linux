@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -83,34 +82,13 @@ func gpuBusy() string {
 	return strings.Join(reasons, "; ")
 }
 
-// aiWouldLoad reports whether running a local AI job would load a model onto the GPU.
-// A llama.cpp server that is already up is reused, so nothing new is loaded.
-func aiWouldLoad() bool {
-	if cfg.AIEndpoint == "" && cfg.AIScript != "" && exists(cfg.AIScript) {
-		host, port := scriptAddr(cfg.AIScript)
-		c := &aiClient{kind: "openai", base: fmt.Sprintf("http://%s:%d", host, port)}
-		return !c.healthy()
-	}
-	// An ai_endpoint llama.cpp server that already answers needs no extra VRAM. (Ollama and
-	// LM Studio list models that aren't loaded, so they keep the check.)
-	if u := strings.TrimRight(cfg.AIEndpoint, "/"); u != "" && !strings.Contains(u, ":11434") && !strings.Contains(u, ":1234") {
-		c := &aiClient{kind: "openai", base: u, hc: &http.Client{Timeout: 2 * time.Second}}
-		if c.healthy() {
-			return false
-		}
-	}
-	return true
-}
-
-// gpuWarning returns a warning to show instead of loading the local AI, or "" if it is fine to go ahead.
+// gpuWarning returns a warning to show instead of loading a model onto the GPU (Whisper
+// for a media transcript), or "" if the GPU looks free.
 func gpuWarning() string {
-	if !aiWouldLoad() {
-		return ""
-	}
 	busy := gpuBusy()
 	if busy == "" {
 		return ""
 	}
-	return "WARNING: the local AI model was NOT loaded because the GPU looks busy: " + busy +
-		". Loading it now would compete for VRAM and could slow down or crash that work. Tell the user and ask whether to go ahead; only if they say yes, call local_ai again with the same arguments plus force:true."
+	return "WARNING: the model was NOT loaded because the GPU looks busy: " + busy +
+		". Loading it now would compete for VRAM and could slow down or crash that work. Tell the user and ask whether to go ahead; only if they say yes, call media again with the same arguments plus force:true."
 }

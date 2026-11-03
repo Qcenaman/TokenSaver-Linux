@@ -399,7 +399,7 @@ func toolPhone(raw json.RawMessage) (string, []toolImage, error) {
 		return "", nil, fmt.Errorf("unknown action %q", a.Action)
 	}
 	if a.Tool == "" {
-		return "", nil, errors.New("tool required (one of the phone engine's tools: find read write scan run run_job job ui screen apps notifications system web local_ai saved)")
+		return "", nil, errors.New("tool required (one of the phone engine's tools: find read write scan run run_job job ui screen apps notifications system web saved)")
 	}
 	if !a.Force {
 		if base, _ := phoneReach(c, false); base != "" {

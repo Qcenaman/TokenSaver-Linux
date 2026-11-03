@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const appVersion = "0.4.0"
+const appVersion = "0.5.0"
 
 // toolsVersion: the Windows TokenSaver release whose tools this build matches.
 const toolsVersion = "1.24.0"
@@ -36,8 +36,6 @@ func main() {
 		consoleInstallHelper()
 	case "uninstall-helper":
 		consoleUninstallHelper()
-	case "ai-watch":
-		os.Exit(aiWatchMain())
 	case "serve":
 		serveLink()
 	case "install-link":

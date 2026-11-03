@@ -128,9 +128,7 @@ func ragExclusions(c ragConfig) ragExcl {
 		e.names[k] = true
 	}
 	e.paths = append(e.paths, appHome, ragDir())
-	if cfg.AIScript != "" {
-		e.paths = append(e.paths, filepath.Join(filepath.Dir(cfg.AIScript), "models"))
-	}
+	e.paths = append(e.paths, filepath.Join(llamaDir(), "models"))
 	e.paths = append(e.paths, blockedRoots()...)
 	for _, x := range c.Exclude {
 		x = strings.TrimSpace(x)
@@ -521,8 +519,8 @@ func (s *embedServer) acquire(ctx context.Context, cpu, big bool, status func(st
 }
 
 func llamaDir() string {
-	if cfg.AIScript != "" {
-		return filepath.Dir(cfg.AIScript)
+	if v := os.Getenv("TOKENSAVER_LLAMA_DIR"); v != "" {
+		return v
 	}
 	if !isWin {
 		h, _ := os.UserHomeDir()

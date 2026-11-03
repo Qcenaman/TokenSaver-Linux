@@ -201,7 +201,6 @@ func serveLinkCtx(ctx context.Context, asService bool) error {
 
 	c := loadLinkCfg()
 	applyServeEnv(c)
-	go aiEnsureWatcher()
 	srv := &http.Server{Handler: linkHandler(c), ReadHeaderTimeout: 10 * time.Second}
 	go keepListening(ctx, srv, c.Port)
 	go adbKeepAlive()

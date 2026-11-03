@@ -593,7 +593,7 @@ func termTool(rest string) {
 	name, args, _ := strings.Cut(rest, " ")
 	args = strings.TrimSpace(args)
 	if name == "" {
-		say("tool NAME {json}; tools: scan find read run_job job saved local_ai run system web")
+		say("tool NAME {json}; tools: scan find read run_job job saved run system web")
 		return
 	}
 	if args == "" {

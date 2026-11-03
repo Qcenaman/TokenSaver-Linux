@@ -243,7 +243,7 @@ func capText(s string, maxc int, label string) (string, string) {
 	for cut > 0 && cut < len(s) && (s[cut]&0xC0) == 0x80 {
 		cut--
 	}
-	return s[:cut], fmt.Sprintf("\n[cut at %d of %d characters; all of it is in %s (read, grep or local_ai it)]", cut, len(s), p)
+	return s[:cut], fmt.Sprintf("\n[cut at %d of %d characters; all of it is in %s (read or grep it)]", cut, len(s), p)
 }
 
 func toolWindow(raw json.RawMessage) (string, error) {
@@ -255,7 +255,6 @@ func toolWindow(raw json.RawMessage) (string, error) {
 		W        int             `json:"w"`
 		H        int             `json:"h"`
 		MaxChars int             `json:"max_chars"`
-		Summary  bool            `json:"summary"`
 		Filter   string          `json:"filter"`
 		Steps    json.RawMessage `json:"steps"`
 		Then     string          `json:"then"`
@@ -382,17 +381,6 @@ func toolWindow(raw json.RawMessage) (string, error) {
 	}
 	if strings.TrimSpace(text) == "" {
 		return label + ": no text found", nil
-	}
-	if a.Summary && len(text) > 1500 {
-		dir := filepath.Join(appHome, "cache", "windows")
-		os.MkdirAll(dir, 0o755)
-		p := filepath.Join(dir, slug(label)+".txt")
-		if err := os.WriteFile(p, []byte(text), 0o644); err == nil {
-			args, _ := json.Marshal(map[string]any{"action": "summarize", "paths": []string{p}, "detail": "normal"})
-			if s, err := toolLocalAI(args); err == nil {
-				return label + " (summary by local AI; full text in " + p + ")\n" + s, nil
-			}
-		}
 	}
 	if a.Changes {
 		text = changesSince("window:"+act+":"+label, text)

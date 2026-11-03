@@ -23,14 +23,11 @@ import (
 // ---------- web: search and read pages on this PC so page text never comes through the chat ----------
 
 type WebRequest struct {
-	Action   string  `json:"action"`
-	Query    string  `json:"query,omitempty"`
-	URLs     StrList `json:"urls,omitempty"`
-	Question string  `json:"question,omitempty"`
-	Pages    int     `json:"pages,omitempty"`
-	Model    string  `json:"model,omitempty"`
-	Force    bool    `json:"force,omitempty"`
-	Fresh    bool    `json:"fresh,omitempty"`
+	Action string  `json:"action"`
+	Query  string  `json:"query,omitempty"`
+	URLs   StrList `json:"urls,omitempty"`
+	Pages  int     `json:"pages,omitempty"`
+	Fresh  bool    `json:"fresh,omitempty"`
 }
 
 type webLink struct {
@@ -791,28 +788,8 @@ func toolWeb(raw json.RawMessage) (string, error) {
 			out += "\n(cut at max_chars; give a pattern to narrow it)"
 		}
 		return out, nil
-	case "ask":
-		if strings.TrimSpace(req.Question) == "" {
-			return "", errors.New("ask needs question")
-		}
-		if len(req.URLs) == 0 && strings.TrimSpace(req.Query) == "" {
-			return "", errors.New("ask needs urls, or query to search first")
-		}
-		if !req.Force {
-			if w := gpuWarning(); w != "" {
-				return strings.Replace(w, "local_ai", "web", -1), nil
-			}
-		}
-		j, err := newJob(JobSpec{Name: "web ask", Kind: "web", Web: &req, Source: "chat"})
-		if err != nil {
-			return "", err
-		}
-		j.start()
-		waitJob(j, waitSecs(a.Wait, 40, 50))
-		s := j.snapshot()
-		return withNotify(formatState(&s), &s, a.Notify), nil
 	}
-	return "", errors.New("action must be search, find, read, links or ask")
+	return "", errors.New("action must be search, find, read or links")
 }
 
 func orDash(s string) string {
@@ -969,54 +946,3 @@ func readPageText(p *webPage, from, n, maxc int) string {
 }
 
 // ---------- ask job ----------
-
-func runWebAsk(j *Job) error {
-	req := j.Spec.Web
-	if req == nil {
-		return errors.New("no web request")
-	}
-	j.setCurrent("finding pages…")
-	urls, _, eng, err := pageURLs(req, 4)
-	if err != nil {
-		return err
-	}
-	j.setCurrent(fmt.Sprintf("reading %d page(s)…", len(urls)))
-	var docs []aiDoc
-	var notes []string
-	for _, pe := range getPages(urls, req.Fresh) {
-		if pe.err != nil {
-			notes = append(notes, pe.err.Error())
-			continue
-		}
-		p := pe.page
-		if p.Note != "" {
-			notes = append(notes, p.Final+": "+p.Note)
-		}
-		text := strings.Join(p.Lines, "\n")
-		docs = append(docs, aiDoc{label: clip(p.Title, 80), ref: p.Final, load: func() (string, error) { return text, nil }})
-	}
-	if len(docs) == 0 {
-		return errors.New("no page could be read (" + strings.Join(notes, "; ") + ")")
-	}
-	aiMu.Lock()
-	defer aiMu.Unlock()
-	c, stop, err := openAI(j, req.Model)
-	if err != nil {
-		return err
-	}
-	defer stop()
-	j.addTotals(int64(len(docs)), 0)
-	out, err := aiAskDocs(j, c, docs, req.Question, "Pages", "pages", "page")
-	if err != nil {
-		return err
-	}
-	head := fmt.Sprintf("Local AI (%s) read %d page(s).", c.model, len(docs))
-	if eng != "" {
-		head += fmt.Sprintf(" Found with %s: %q.", eng, req.Query)
-	}
-	for _, n := range notes {
-		head += "\nnote: " + clip(n, 200)
-	}
-	j.setOutput(head + "\n" + out)
-	return nil
-}

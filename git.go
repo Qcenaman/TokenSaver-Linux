@@ -437,8 +437,8 @@ func gitPush(root string, timeout time.Duration) (string, error) {
 	return gitShort(out, 12), nil
 }
 
-// gitHandoff writes a handoff for another project/chat from the commits and
-// diff since ref (default: last tag), summarized by the local AI when it can.
+// gitHandoff writes a handoff for another project/chat: the commits and changed files
+// since ref (default: last tag) plus the user's notes; with to, the file also gets the diff.
 func gitHandoff(root string, a gitArgs, maxChars int) (string, error) {
 	since := strings.TrimSpace(a.Ref)
 	if since == "" {
@@ -457,34 +457,20 @@ func gitHandoff(root string, a gitArgs, maxChars int) (string, error) {
 	if strings.TrimSpace(log) == "" && strings.TrimSpace(stat) == "" {
 		return "", fmt.Errorf("no changes since %s", since)
 	}
+	head := fmt.Sprintf("# Handoff: %s (%s)\n\nCommits:\n%s\n\nFiles:\n%s\n", filepath.Base(root), rng, log, stat)
+	if a.Message != "" {
+		head += "\nNotes:\n" + a.Message + "\n"
+	}
+	if a.To == "" {
+		return clip(head, maxChars), nil
+	}
 	full, _, _ := gitExec(root, 2*time.Minute, "diff", rng, "--", ".", ":(exclude)*.lock", ":(exclude)*.sum", ":(exclude)*.min.js")
 	if len(full) > 120000 {
 		full = full[:120000] + "\n… diff cut here"
 	}
-	repo := filepath.Base(root)
-	head := fmt.Sprintf("# Handoff: %s (%s)\n\nCommits:\n%s\n\nFiles:\n%s\n", repo, rng, log, stat)
-
-	dir := filepath.Join(appHome, "cache", "handoff")
-	os.MkdirAll(dir, 0o755)
-	src := filepath.Join(dir, slug(repo+"-"+since)+".txt")
-	body := head
-	if err := os.WriteFile(src, []byte(head+"\nDiff:\n"+full), 0o644); err == nil {
-		q := "Write a handoff note for another developer/AI who will continue in a related project. Use this exact Markdown layout: '## What changed' (grouped by feature, plain language), '## New or changed interfaces' (tool names, actions, parameters, file formats, config keys, ports — exact names), '## Decisions and constraints' (things that must stay the same), '## Still open'. Be concrete and complete but short; no praise, no filler."
-		if a.Message != "" {
-			q += " Extra context from the user: " + a.Message
-		}
-		args, _ := json.Marshal(map[string]any{"action": "ask", "paths": []string{src}, "question": q, "wait_seconds": waitSecs(a.Wait, 50, 50)})
-		if s, err := toolLocalAI(args); err == nil && !strings.Contains(s, "WARNING") && strings.TrimSpace(s) != "" {
-			body = head + "\n" + s + "\n"
-		} else if err == nil && strings.Contains(s, "WARNING") {
-			body = head + "\n(local AI not used: " + strings.TrimSpace(gitShort(s, 3)) + ")\n"
-		}
+	body := head + "\nDiff:\n" + full
+	if err := os.WriteFile(a.To, []byte(body), 0o644); err != nil {
+		return "", err
 	}
-	if a.To != "" {
-		if err := os.WriteFile(a.To, []byte(body), 0o644); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("handoff written to %s (%d chars)\n%s", a.To, len(body), clip(body, maxChars)), nil
-	}
-	return clip(body, maxChars), nil
+	return fmt.Sprintf("handoff written to %s (%d chars, diff included)\n%s", a.To, len(body), clip(head, maxChars)), nil
 }

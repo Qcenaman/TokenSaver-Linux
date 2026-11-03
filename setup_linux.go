@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -123,19 +121,4 @@ func consoleSetup() {
 		fmt.Println("switching windows and screenshots are limited by the desktop. For full control pick")
 		fmt.Println("\"Ubuntu on Xorg\" with the gear button on the login screen.")
 	}
-	if s := linuxDefaultAIScript(); s != "" && cfg.AIScript == "" {
-		fmt.Println("\nlocal_ai will start", s, "when it needs the model.")
-	}
-}
-
-// linuxDefaultAIScript: a llama.cpp start script in ~/llama.cpp (start*.sh), the Linux
-// counterpart of the Windows .bat; the first by name.
-func linuxDefaultAIScript() string {
-	h, _ := os.UserHomeDir()
-	m, _ := filepath.Glob(filepath.Join(h, "llama.cpp", "start*.sh"))
-	sort.Strings(m)
-	if len(m) > 0 {
-		return m[0]
-	}
-	return ""
 }

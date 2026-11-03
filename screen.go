@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -283,8 +281,6 @@ func toolWindowFull(raw json.RawMessage) (string, []toolImage, error) {
 		MaxPx    int     `json:"max_px"`
 		MaxChars int     `json:"max_chars"`
 		Text     *string `json:"text"`
-		Question string  `json:"question"`
-		Force    bool    `json:"force"`
 		Boxes    bool    `json:"boxes"`
 	}
 	if err := json.Unmarshal(raw, &a); err != nil {
@@ -313,7 +309,7 @@ func toolWindowFull(raw json.RawMessage) (string, []toolImage, error) {
 		body, note := capText(t, min(maxc, 30000), "clipboard")
 		return body + note, nil, nil
 	case act == "screenshot":
-		s, img, err := screenshot(a.Window, a.X, a.Y, a.W, a.H, a.MaxPx, a.Question, a.Force)
+		s, img, err := screenshot(a.Window, a.X, a.Y, a.W, a.H, a.MaxPx)
 		if img == nil {
 			return s, nil, err
 		}
@@ -362,8 +358,8 @@ func toolWindowFull(raw json.RawMessage) (string, []toolImage, error) {
 	return s, nil, err
 }
 
-// screenshot returns a small JPEG of a window or area, or (with question) the local AI's answer about it.
-func screenshot(window string, x, y *int, w, h, maxPx int, question string, force bool) (string, []byte, error) {
+// screenshot returns a small JPEG of a window or area.
+func screenshot(window string, x, y *int, w, h, maxPx int) (string, []byte, error) {
 	if !inputSupported {
 		return "", nil, errNoInput
 	}
@@ -410,20 +406,6 @@ func screenshot(window string, x, y *int, w, h, maxPx int, question string, forc
 	info := fmt.Sprintf("%s: %dx%d shown at %dx%d", label, ow, oh, nw, nh)
 	if scale > 1.01 {
 		info += fmt.Sprintf("; multiply picture x,y by %.2f for click_at", scale)
-	}
-	if strings.TrimSpace(question) != "" {
-		dir := filepath.Join(appHome, "cache", "windows")
-		os.MkdirAll(dir, 0o755)
-		p := filepath.Join(dir, slug("shot "+label)+".jpg")
-		if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
-			return "", nil, err
-		}
-		args, _ := json.Marshal(map[string]any{"action": "ask", "paths": []string{p}, "question": question, "force": force})
-		ans, err := toolLocalAI(args)
-		if err != nil {
-			return "", nil, err
-		}
-		return info + " (answered by local AI from " + p + ")\n" + ans, nil, nil
 	}
 	return info, buf.Bytes(), nil
 }

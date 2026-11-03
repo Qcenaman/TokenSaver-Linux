@@ -50,7 +50,7 @@ func TestRag(t *testing.T) {
 	os.MkdirAll(filepath.Join(dir, "llama"), 0o755)
 	os.WriteFile(filepath.Join(dir, "llama", "llama-server"), nil, 0o755)
 	os.WriteFile(filepath.Join(dir, "llama", "llama-server.exe"), nil, 0o755)
-	cfg.AIScript = filepath.Join(dir, "llama", "x.bat")
+	t.Setenv("TOKENSAVER_LLAMA_DIR", filepath.Join(dir, "llama"))
 	docs := filepath.Join(dir, "docs")
 	os.MkdirAll(filepath.Join(docs, "node_modules"), 0o755)
 	os.WriteFile(filepath.Join(docs, "a.md"), []byte("# Saved jobs\nSaved jobs can be re-run by double click.\n"+strings.Repeat("filler line about nothing\n", 120)+"The banana budget is 42 pesos."), 0o644)

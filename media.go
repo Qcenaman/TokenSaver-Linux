@@ -244,7 +244,7 @@ func mediaTranscript(p, lang string, stamps, force bool, wait time.Duration, max
 	}
 	if !force {
 		if w := gpuWarning(); w != "" {
-			return "", errors.New(strings.Replace(w, "call local_ai again", "call media again", 1))
+			return "", errors.New(w)
 		}
 	}
 	mediaMu.Lock()
@@ -310,7 +310,7 @@ func mediaFrames(p string, n int, every float64, maxc int) (string, error) {
 	files, _ := filepath.Glob(filepath.Join(dir, "frame-*.jpg"))
 	sort.Strings(files)
 	var b strings.Builder
-	fmt.Fprintf(&b, "%d frames from %s in %s (one every %.1fs). Use read mode image on one to look, or local_ai on the folder to describe them.\n", len(files), filepath.Base(p), dir, every)
+	fmt.Fprintf(&b, "%d frames from %s in %s (one every %.1fs). Use read mode image on one to look.\n", len(files), filepath.Base(p), dir, every)
 	for i, f := range files {
 		t, err := extractTextOpt(f, 20000, textOpts{ocrWait: 20 * time.Second})
 		if err != nil || strings.HasPrefix(t, "[no text") {

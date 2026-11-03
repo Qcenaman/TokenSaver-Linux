@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const appVersion = "0.5.0"
+const appVersion = "0.5.1"
 
 // toolsVersion: the Windows TokenSaver release whose tools this build matches.
 const toolsVersion = "1.24.0"

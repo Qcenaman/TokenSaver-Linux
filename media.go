@@ -229,7 +229,7 @@ func transcribe(p, key, lang string, stamps bool) error {
 	return nil
 }
 
-func mediaTranscript(p, lang string, stamps, force bool, wait time.Duration, maxc int) (string, error) {
+func mediaTranscript(p, lang string, stamps bool, wait time.Duration, maxc int) (string, error) {
 	key, err := mediaKey(p)
 	if err != nil {
 		return "", err
@@ -241,11 +241,6 @@ func mediaTranscript(p, lang string, stamps, force bool, wait time.Duration, max
 	if b, err := os.ReadFile(txt); err == nil {
 		body, note := capText(strings.TrimSpace(string(b)), maxc, filepath.Base(p)+" transcript")
 		return fmt.Sprintf("Transcript of %s (full text: %s)\n%s%s", filepath.Base(p), txt, body, note), nil
-	}
-	if !force {
-		if w := gpuWarning(); w != "" {
-			return "", errors.New(w)
-		}
 	}
 	mediaMu.Lock()
 	done, running := mediaRunning[key]
@@ -280,7 +275,7 @@ func mediaTranscript(p, lang string, stamps, force bool, wait time.Duration, max
 	if err != nil {
 		return "", err
 	}
-	return mediaTranscript(p, lang, stamps, true, 0, maxc)
+	return mediaTranscript(p, lang, stamps, 0, maxc)
 }
 
 // mediaFrames saves stills from a video and returns their OCR text.
@@ -330,7 +325,6 @@ func toolMedia(raw json.RawMessage) (string, error) {
 		Timestamps bool    `json:"timestamps"`
 		Frames     int     `json:"frames"`
 		Every      float64 `json:"every"`
-		Force      bool    `json:"force"`
 		MaxChars   int     `json:"max_chars"`
 	}
 	if err := json.Unmarshal(raw, &a); err != nil {
@@ -355,7 +349,7 @@ func toolMedia(raw json.RawMessage) (string, error) {
 	case "info", "":
 		return mediaInfo(p)
 	case "transcript":
-		return mediaTranscript(p, a.Language, a.Timestamps, a.Force, 45*time.Second, maxc)
+		return mediaTranscript(p, a.Language, a.Timestamps, 45*time.Second, maxc)
 	case "frames":
 		return mediaFrames(p, a.Frames, a.Every, maxc)
 	}
